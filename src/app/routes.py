@@ -6,29 +6,29 @@ class Routes:
     def build():
         return st.navigation(
             [
-                st.Page(
-                    "pages/home.py",
-                    title="Home",
-                    icon=":material/home:",
-                    default=True,
-                ),
+                # st.Page(
+                #     "pages/home.py",
+                #     title="Home",
+                #     icon=":material/home:",
+                #     default=True,
+                # ),
                 st.Page(
                     "pages/data_explore.py",
                     title="Data Exploration",
                     icon=":material/explore:",
                 ),
+                # st.Page(
+                #     "pages/data_sampling.py",
+                #     title="Data Sampling",
+                # #     icon=":material/explore:",
+                # ),
+                # st.Page(
+                #     "pages/data_processing.py",
+                #     title="Data Processing",
+                #     icon=":material/explore:",
+                # ),
                 st.Page(
-                    "pages/data_sampling.py",
-                    title="Data Sampling",
-                    icon=":material/explore:",
-                ),
-                st.Page(
-                    "pages/data_processing.py",
-                    title="Data Processing",
-                    icon=":material/explore:",
-                ),
-                st.Page(
-                    "pages/model_experiments.py",
+                    "pages/model_experiment.py",
                     title="Experiments",
                     icon=":material/experiment:",
                 ),

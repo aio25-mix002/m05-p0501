@@ -15,7 +15,7 @@ def distribution_target(df):
     plt.title("Sales")
     
     
-def missing_fftr(df):
+def missing_ftr(df):
     ''' Check and sort missing data by feature '''
     missing = df.isnull().sum()
     missing = missing[missing > 0]
@@ -25,7 +25,7 @@ def missing_fftr(df):
     missing.plot.barh(color='skyblue', edgecolor='black')
     plt.title("Missing Data by Feature", fontsize=14)
     plt.xlabel("Number of Missing Values")
-    plt.ylabel("Feature Name")
+    plt.ylabel("Feature Name"f
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.gca().invert_yaxis()
     plt.show()

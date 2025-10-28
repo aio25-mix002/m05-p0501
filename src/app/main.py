@@ -1,7 +1,14 @@
+import os, sys
 import streamlit as st
-from src.modeling.utils.logging_utils import logger as Logger
-from src.app.routes import Routes
+
+SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if SRC_PATH not in sys.path:
+    sys.path.append(SRC_PATH)
+    
+from src.app.utils.logging_utils import logger as Logger
+from src.app import routes
 from src.app import startup as Startup
+
 
 def main():
     # Configure the page layout
@@ -12,12 +19,16 @@ def main():
     )
 
     # Tabs for different functionality
-    tabs = st.tabs(["Overview", "Train Model", "Predict", "Visualisations"])
-    # Set up routes & pages
-    pg = Routes.build()
-
-    # Run
-    pg.run()
+    tabs = st.tabs(["Data Exploration", "Model Experiments", "Live Prediction"])
+    
+    with tabs[0]:
+        exec(open('src/app/pages/data_explore.py').read())
+        
+    with tabs[1]:
+        exec(open('src/app/pages/model_experiment.py').read())
+        
+    with tabs[2]:
+        exec(open('src/app/pages/live_predict.py').read())
 
 
 # Indicate that this is the main entry point.

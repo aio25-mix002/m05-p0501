@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-%matplotlib inline
+# %matplotlib inline
 
 #ignoring the warnings while executing codes
 import warnings
@@ -25,7 +25,7 @@ def missing_ftr(df):
     missing.plot.barh(color='skyblue', edgecolor='black')
     plt.title("Missing Data by Feature", fontsize=14)
     plt.xlabel("Number of Missing Values")
-    plt.ylabel("Feature Name"f
+    plt.ylabel("Feature Name")
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.gca().invert_yaxis()
     plt.show()

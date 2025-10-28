@@ -1,8 +1,7 @@
-from src.app.services import dataset_service
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from app.data_processing.eda_plot import distribution_target, missing_ftr, 
+from src.data_processing.eda_plot import distribution_target, missing_ftr, heatmap
 
 st.title("Data Exploration")
 
@@ -10,7 +9,8 @@ st.markdown("### Raw Data")
 with st.spinner("Loading data..."):
 
     # Get data information
-    house_df = pd.read_csv("../../data/train-house-prices-advanced-regression-techniques.csv")
+    house_df = pd.read_csv("data/train-house-prices-advanced-regression-techniques.csv")  # Path relative to the project root
+
     
     st.markdown("#### Data description")
     st.dataframe(house_df.describe())

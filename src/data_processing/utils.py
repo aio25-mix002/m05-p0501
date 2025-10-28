@@ -4,32 +4,41 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 import numpy as np
+import streamlit as st
+
+
 
 def processing_pipeline(df, val_set=False, polynomial=True):
     ''' Processing pipeline '''
     df = drop_missing(df)
     num_cols = [col for col in df.columns if df[col].dtype in ["float64","int64"]]
     cat_cols = [col for col in df.columns if df[col].dtype not in ["float64","int64"]]
+    num_cols.remove('SalePrice')
     
-    df, encoded_cols = one_hot_encode(df, cat_cols)
-    # df = impute_missing(df, num_cols)
-    # df = normalize(df, num_cols)
-    df = stack_features(df, num_cols, cat_cols) # Stack numerical and encoded columns
-    
+    # imputer = SimpleImputer(strategy='median')
+    num_imputer = SimpleImputer(strategy='median')
+    cat_imputer = SimpleImputer(strategy='most_frequent')
+    scaler = MinMaxScaler()
+    # 1. Data Splitting
     if val_set:
         train_df, test_df, val_df = data_split(df, val_set=val_set)
         y_train, y_test, y_val = train_df['SalePrice'].values, test_df['SalePrice'].values, val_df['SalePrice'].values
-        train_df = train_df.drop(["SalePrice"], axis=1)
-        test_df = test_df.drop(["SalePrice"], axis=1)
-        val_df = val_df.drop(["SalePrice"], axis=1)
+    
         
         # Missing imputation
-        imputer = SimpleImputer()
-        train_df[num_cols] = imputer.fit_transform(train_df[num_cols])
-        test_df[num_cols], val_df[num_cols] = imputer.transform(test_df[num_cols]), imputer.transform(val_df[num_cols])
+        train_df[num_cols] = num_imputer.fit_transform(train_df[num_cols])
+        test_df[num_cols], val_df[num_cols] = num_imputer.transform(test_df[num_cols]), num_imputer.transform(val_df[num_cols])
+        
+        train_df[cat_cols] = cat_imputer.fit_transform(train_df[cat_cols])
+        test_df[cat_cols] = cat_imputer.transform(test_df[cat_cols])
+        val_df[cat_cols] = cat_imputer.transform(val_df[cat_cols])
+        
+        # One-hot encoding for categorical features
+        train_df_encoded, encoder = one_hot_encode(train_df, cat_cols)
+        test_df_encoded, _ = one_hot_encode(test_df, cat_cols, encoder=encoder)
+        val_df_encoded, _ = one_hot_encode(val_df, cat_cols, encoder=encoder)
         
         # Scale numeric data
-        scaler = MinMaxScaler()
         train_df[num_cols] = scaler.fit_transform(train_df[num_cols])
         test_df[num_cols], val_df[num_cols] = scaler.transform(test_df[num_cols]), scaler.transform(val_df[num_cols])
         
@@ -37,54 +46,85 @@ def processing_pipeline(df, val_set=False, polynomial=True):
         if polynomial:
             poly_features = PolynomialFeatures(
                 degree=2, interaction_only=True, include_bias=False)
-            train_poly_features = poly_features.fit_transform(train_df[num_cols])  # ***Your code here***
+            train_poly_features = poly_features.fit_transform(train_df[num_cols]) 
             test_poly_features = poly_features.transform(test_df[num_cols])
             val_poly_features = poly_features.transform(val_df[num_cols])
             
-            X_train = np.hstack([train_poly_features, train_df[encoded_cols].values])
-            X_test = np.hstack([test_poly_features, test_df[encoded_cols].values])
-            X_val = np.hstack([val_poly_features, val_df[encoded_cols].values])
+            X_train = np.hstack([train_poly_features, train_df_encoded])
+            X_test = np.hstack([test_poly_features, test_df_encoded])
+            X_val = np.hstack([val_poly_features, val_df_encoded])
 
         else:
-            X_train = stack_feature(train_df, num_cols, encoded_cols)
-            X_test = stack_feature(test_df, num_cols, encoded_cols)
-            X_val = stack_feature(val_df, num_cols, encoded_cols)
-        
+            # X_train = stack_features(train_df, num_cols, train_encoded_cols)
+            # X_test = stack_features(test_df, num_cols, test_encoded_cols)
+            # X_val = stack_features(val_df, num_cols, val_encoded_cols)
+            # Combine scaled numerical features and encoded categorical features
+            train_combined = pd.concat([train_df[num_cols], train_df_encoded], axis=1)
+            test_combined = pd.concat([test_df[num_cols], test_df_encoded], axis=1)
+            
+            # Align columns
+            train_cols = train_combined.columns
+            test_combined = test_combined.reindex(columns=train_cols, fill_value=0)
+
+            X_train = train_combined.values
+            X_test = test_combined.values
+            
         return (X_train, y_train), (X_test, y_test), (X_val, y_val)
     
     else:
         train_df, test_df = data_split(df, val_set=val_set)
         y_train, y_test = train_df['SalePrice'].values, test_df['SalePrice'].values
-        train_df = train_df.drop(["SalePrice"], axis=1)
-        test_df = test_df.drop(["SalePrice"], axis=1)
+        # train_df = train_df.drop(["SalePrice"], axis=1)
+        # test_df = test_df.drop(["SalePrice"], axis=1)
+
         
         # Missing imputation
-        imputer = SimpleImputer()
-        train_df[num_cols] = imputer.fit_transform(train_df[num_cols])
-        test_df[num_cols] = imputer.transform(test_df[num_cols])
-   
+        train_df[num_cols] = num_imputer.fit_transform(train_df[num_cols])
+        test_df[num_cols] = num_imputer.transform(test_df[num_cols])
+        
+        train_df[cat_cols] = cat_imputer.fit_transform(train_df[cat_cols])
+        test_df[cat_cols] = cat_imputer.transform(test_df[cat_cols])
+        
+        # One-hot encoding
+        train_df_encoded, encoder = one_hot_encode(train_df, cat_cols)
+        test_df_encoded, _ = one_hot_encode(test_df, cat_cols, encoder=encoder)  # handling cases where the train and test sets might have different columns after encoding 
         
         # Scale numeric data
-        scaler = MinMaxScaler()
         train_df[num_cols] = scaler.fit_transform(train_df[num_cols])
         test_df[num_cols] = scaler.transform(test_df[num_cols])
-        
-        train_df = stack_feature(train_df, num_cols, encoded_cols)
-        test_df = stack_feature(test_df, num_cols, encoded_cols)
-        
+    
+        # Make polynomial features
         if polynomial:
             poly_features = PolynomialFeatures(
                 degree=2, interaction_only=True, include_bias=False)
-            train_poly_features = poly_features.fit_transform(train_df[num_cols])  # ***Your code here***
+            train_poly_features = poly_features.fit_transform(train_df[num_cols])
             test_poly_features = poly_features.transform(test_df[num_cols])
             
-            X_train = np.hstack([train_poly_features, train_df[encoded_cols].values])
-            X_test = np.hstack([test_poly_features, test_df[encoded_cols].values])
+            # Align columns after one-hot encoding to ensure they match
+            train_cols = train_df_encoded.columns
+            test_df_encoded = test_df_encoded.reindex(columns=train_cols, fill_value=0)
+        
+            X_train = np.hstack([train_poly_features, train_df_encoded])
+            X_test = np.hstack([test_poly_features, test_df_encoded])
 
         else:
-            X_train = stack_feature(train_df, num_cols, encoded_cols)
-            X_test = stack_feature(test_df, num_cols, encoded_cols)
+            # X_train = stack_features(train_df, num_cols, encoder.get_feature_names_out(cat_cols))
+            # X_test = stack_features(test_df, num_cols, encoder.get_feature_names_out(cat_cols))
+            
+            # Combine scaled numerical features and encoded categorical features
+            train_combined = pd.concat([train_df[num_cols], train_df_encoded], axis=1)
+            test_combined = pd.concat([test_df[num_cols], test_df_encoded], axis=1)
+            val_combined = pd.concat([val_df[num_cols], val_df_encoded], axis=1)
+            
+            # Align columns
+            train_cols = train_combined.columns
+            test_combined = test_combined.reindex(columns=train_cols, fill_value=0)
+            val_combined = val_combined.reindex(columns=train_cols, fill_value=0)
 
+            X_train = train_combined.values
+            X_test = test_combined.values
+            X_val = val_combined.values
+        
         return (X_train, y_train), (X_test, y_test)
 
 
@@ -124,21 +164,25 @@ def data_split(df, val_set=False):
         val_df = val_df.drop('SalePrice_bins', axis=1)
         
         return train_df, test_df, val_df
+    
     # Remove the temporary binning column
-    train_df = train_df.drop('SalePrice_bins', axis=1)
+    train_df = train_val_df.drop('SalePrice_bins', axis=1)
     test_df = test_df.drop('SalePrice_bins', axis=1)
     
     return train_df, test_df
     
-def one_hot_encode(df, cat_cols):
+def one_hot_encode(df, cat_cols, encoder=None):
     ''' One-hot encode categorical columns '''
-    encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
-    encoder.fit(df[cat_cols])
+    df_encoded = df.copy()
+    if encoder is None:
+        encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False, drop='first')  # drop='first' to avoid multicollinearity,
+        encoder.fit(df_encoded[cat_cols].astype(str))
+
     encoded_cols = list(encoder.get_feature_names_out(cat_cols))
-    df[encoded_cols] = encoder.transform(df[cat_cols])
-    return df, encoded_cols
+    df_encoded[encoded_cols] = encoder.transform(df_encoded[cat_cols].astype(str))
+    df_encoded = df_encoded.drop(cat_cols, axis=1)
+    return df_encoded, encoder
 
 def stack_features(df, num_cols, encoded_cols):
     ''' Stack numerical and encoded columns '''
     return np.hstack([df[num_cols], df[encoded_cols]])
-

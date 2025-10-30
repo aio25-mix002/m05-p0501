@@ -59,7 +59,7 @@ Profiles:
 ### Via Google Colab
 We can run this app via Google Colab Jupyter Notebook, checkout [runbook.ipynb](./notebooks/runbook.ipynb) to get the notebook file.
 
-Or click this link for the direct-link to Google Colab: [Open in Google Colab](https://colab.research.google.com/github/aio25-mix002/m03-p0301/blob/main/notebooks/runbook.ipynb)
+Or click this link for the direct-link to Google Colab: [Open in Google Colab](https://colab.research.google.com/github/aio25-mix002/m05-p0501/blob/notebooks/House-Price-Prediction-Advanced-Regression-Techniques.ipynb)
 
 ## Appendix
 ### Using UV

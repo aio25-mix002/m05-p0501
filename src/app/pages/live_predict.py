@@ -9,7 +9,7 @@ import pandas as pd
 from pathlib import Path
 
 # --- Khởi tạo giao diện ---
-st.set_page_config(page_title="Live Prediction", page_icon="🔮", layout="wide")
+# st.set_page_config(page_title="Live Prediction", page_icon="🔮", layout="wide")
 st.title("🔮 Live Prediction")
 st.write("This page is for Live Prediction")
 

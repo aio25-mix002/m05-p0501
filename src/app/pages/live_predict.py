@@ -15,7 +15,9 @@ if SRC_PATH not in sys.path:
     sys.path.append(SRC_PATH)
 
 # ---- Paths ----
-DATA_PATH = os.path.join(SRC_PATH, "data", "train-house-prices-advanced-regression-techniques.csv")
+DATA_PATH = os.path.join(
+    SRC_PATH, "m05-p0501", "data", "train-house-prices-advanced-regression-techniques.csv"
+)
 
 # ---- Cache helpers ----
 @st.cache_data(show_spinner=False)

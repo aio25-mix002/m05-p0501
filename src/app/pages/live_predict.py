@@ -5,7 +5,9 @@ import numpy as np
 
 # ---------------- UI ----------------
 st.title("🔮 Live Prediction")
-st.write("Điền 5 tham số bên dưới để dự đoán **SalePrice** (giá nhà).")
+# st.write("Điền 5 tham số bên dưới để dự đoán **SalePrice** (giá nhà).")
+st.write("DEBUG:", DATA_PATH, os.path.exists(DATA_PATH))
+
 
 # ---- Project root to import internal modules if needed ----
 SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))

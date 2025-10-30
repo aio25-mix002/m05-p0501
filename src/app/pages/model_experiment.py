@@ -20,15 +20,16 @@ except Exception:
     OPTUNA_AVAILABLE = False
 
 def _ensure_optuna():
-    """Cài optuna nếu chưa có và reload vào runtime."""
+    """Cài Optuna nếu chưa có và reload vào runtime."""
     global OPTUNA_AVAILABLE
     if OPTUNA_AVAILABLE:
         return
+    # import ngay trong hàm để tránh NameError khi file được exec(...)
+    import sys, importlib, subprocess
     with st.spinner("Installing Optuna..."):
-        # dùng pip trong đúng interpreter hiện tại
         subprocess.check_call([sys.executable, "-m", "pip", "install", "optuna"])
     importlib.invalidate_caches()
-    importlib.import_module("optuna")
+    import optuna  # re-import sau khi cài
     OPTUNA_AVAILABLE = True
 
 st.write()

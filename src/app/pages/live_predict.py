@@ -32,7 +32,7 @@ DATA_PATH = ROOT / "data" / "train-house-prices-advanced-regression-techniques.c
 # Nếu chưa có file, cho phép user tải nhanh ngay trong UI
 if not DATA_PATH.exists():
     st.warning(f"Không tìm thấy dữ liệu train: {DATA_PATH}")
-    if st.button("⬇️ Tải dataset về thư mục data/ (yêu cầu gdown)"):
+    if st.button("⬇️ Bấm tải dataset về thư mục data"):
         try:
             import subprocess, sys
             DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -51,7 +51,6 @@ if not DATA_PATH.exists():
 # ---------------- UI ----------------
 st.title("🔮 Live Prediction")
 st.write("Điền 5 tham số bên dưới để dự đoán **SalePrice** (giá nhà).")
-st.write("DEBUG:", str(DATA_PATH), DATA_PATH.exists())
 
 # ---- Cache helpers ----
 @st.cache_data(show_spinner=False)

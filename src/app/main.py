@@ -9,6 +9,13 @@ from src.app.utils.logging_utils import logger as Logger
 from src.app import routes
 from src.app import startup as Startup
 
+# traceback đúng tên file
+def _exec_file(path: str):
+    """Đọc & chạy file .py với UTF-8 để tránh UnicodeDecodeError."""
+    with open(path, 'r', encoding='utf-8', errors='replace') as f:
+        source = f.read()
+    code = compile(source, path, 'exec')  
+    exec(code, globals(), globals())
 
 def main():
     # Configure the page layout

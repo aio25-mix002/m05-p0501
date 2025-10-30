@@ -2,18 +2,25 @@ import os, sys
 import streamlit as st
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 def _project_root() -> Path:
+    """
+    Trả về thư mục gốc của dự án, ổn định ngay cả khi file được exec(...) từ main.py.
+    - Với __file__ = src/app/pages/live_predict.py -> parents[3] = project root
+    - Với __main__.__file__ = src/app/main.py      -> parents[2] = project root
+    """
     # Ưu tiên __file__ nếu có
     try:
         here = Path(__file__).resolve()
-        return here.parents[2]  # .../src/app/pages -> parents[2] = project root
+        # .../src/app/pages -> [0]=pages, [1]=app, [2]=src, [3]=project-root
+        return here.parents[3]
     except Exception:
         pass
     # Fallback: lấy theo file main (__main__.__file__)
     try:
         main_file = Path(sys.modules["__main__"].__file__).resolve()
-        # main ở src/app/main.py -> parents[2] = project root
+        # main ở src/app/main.py -> [0]=app, [1]=src, [2]=project-root
         return main_file.parents[2]
     except Exception:
         # Chót cùng: dùng CWD (khi chạy từ root dự án)
@@ -22,15 +29,33 @@ def _project_root() -> Path:
 ROOT = _project_root()
 DATA_PATH = ROOT / "data" / "train-house-prices-advanced-regression-techniques.csv"
 
+# Nếu chưa có file, cho phép user tải nhanh ngay trong UI
+if not DATA_PATH.exists():
+    st.warning(f"Không tìm thấy dữ liệu train: {DATA_PATH}")
+    if st.button("⬇️ Tải dataset về thư mục data/ (yêu cầu gdown)"):
+        try:
+            import subprocess, sys
+            DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+            # ID file bạn dùng trước đó
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "gdown"])
+            subprocess.check_call([
+                sys.executable, "-m", "gdown",
+                "1Dh_y7gFDUa2sD72_cKIa209dhbMVoGEd",
+                "-O", str(DATA_PATH)
+            ])
+            st.success(f"Tải xong: {DATA_PATH}")
+        except Exception as e:
+            st.error(f"Tải thất bại: {e}")
+            st.stop()
+
 # ---------------- UI ----------------
 st.title("🔮 Live Prediction")
 st.write("Điền 5 tham số bên dưới để dự đoán **SalePrice** (giá nhà).")
-st.write("DEBUG:", DATA_PATH, os.path.exists(DATA_PATH))
-
+st.write("DEBUG:", str(DATA_PATH), DATA_PATH.exists())
 
 # ---- Cache helpers ----
 @st.cache_data(show_spinner=False)
-def _read_train_csv(path: str) -> pd.DataFrame:
+def _read_train_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 @st.cache_resource(show_spinner=False)
@@ -146,7 +171,6 @@ with st.spinner("Đang huấn luyện mô hình..."):
 
 # ------------- Khi người dùng bấm Dự đoán -------------
 if submitted:
-    # Tạo một hàng dữ liệu từ input
     X_new = pd.DataFrame([{
         "OverallQual": overallqual,
         "GrLivArea": grlivarea,

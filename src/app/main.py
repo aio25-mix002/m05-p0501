@@ -1,6 +1,8 @@
 import os, sys
 import streamlit as st
 
+os.environ.setdefault("PYTHONUTF8", "1")
+
 SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if SRC_PATH not in sys.path:
     sys.path.append(SRC_PATH)
@@ -11,10 +13,11 @@ from src.app import startup as Startup
 
 # traceback đúng tên file
 def _exec_file(path: str):
-    """Đọc & chạy file .py với UTF-8 để tránh UnicodeDecodeError."""
-    with open(path, 'r', encoding='utf-8', errors='replace') as f:
-        source = f.read()
-    code = compile(source, path, 'exec')  
+    with open(path, 'rb') as f:
+        source_bytes = f.read()
+    # Decode UTF-8, thay ký tự lạ => tránh crash
+    source = source_bytes.decode('utf-8', errors='replace')
+    code = compile(source, path, 'exec')
     exec(code, globals(), globals())
 
 def main():
@@ -29,13 +32,13 @@ def main():
     tabs = st.tabs(["Data Exploration", "Model Experiments", "Live Prediction"])
     
     with tabs[0]:
-        exec(open('src/app/pages/data_explore.py').read())
+        _exec_file('src/app/pages/data_explore.py') 
         
     with tabs[1]:
-        exec(open('src/app/pages/model_experiment.py').read())
+        _exec_file('src/app/pages/model_experiment.py') 
         
     with tabs[2]:
-        exec(open('src/app/pages/live_predict.py').read())
+        _exec_file('src/app/pages/live_predict.py') 
 
 
 # Indicate that this is the main entry point.

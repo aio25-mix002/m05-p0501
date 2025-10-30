@@ -33,7 +33,7 @@ def _tune_with_optuna(name, estimator_cls, X, y, n_trials=50, cv_splits=5, rando
     Tối ưu hyperparameters cho Ridge/Lasso bằng Optuna.
     LinearRegression không có tham số để tune -> trả {}.
     """
-    if tune and not _OPTUNA_AVAILABLE:
+    if not _OPTUNA_AVAILABLE:
         _ensure_optuna_backend()
 
     def build_model(trial):

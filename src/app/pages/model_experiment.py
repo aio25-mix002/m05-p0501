@@ -46,7 +46,7 @@ models = {
 with st.spinner("Training models and evaluating results..."):
     house_df = pd.read_csv("data/train-house-prices-advanced-regression-techniques.csv")
     train_set, test_set = processing_pipeline(house_df, val_set=False, polynomial=True)
-    df_results = train_and_evaluation(models, train_set, test_set)
+    df_results = train_and_evaluation(models, train_set, test_set, tune=use_optuna, n_trials=n_trials, cv_splits=cv_folds)
 
 st.success("Model training and evaluation complete!")
 # Display the results

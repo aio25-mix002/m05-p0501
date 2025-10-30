@@ -3,15 +3,24 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# ---- Project root to import internal modules if needed ----
-SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-if SRC_PATH not in sys.path:
-    sys.path.append(SRC_PATH)
+def _project_root() -> Path:
+    # Ưu tiên __file__ nếu có
+    try:
+        here = Path(__file__).resolve()
+        return here.parents[2]  # .../src/app/pages -> parents[2] = project root
+    except Exception:
+        pass
+    # Fallback: lấy theo file main (__main__.__file__)
+    try:
+        main_file = Path(sys.modules["__main__"].__file__).resolve()
+        # main ở src/app/main.py -> parents[2] = project root
+        return main_file.parents[2]
+    except Exception:
+        # Chót cùng: dùng CWD (khi chạy từ root dự án)
+        return Path.cwd()
 
-# ---- Paths ----
-DATA_PATH = os.path.join(
-    SRC_PATH, "data", "train-house-prices-advanced-regression-techniques.csv"
-)
+ROOT = _project_root()
+DATA_PATH = ROOT / "data" / "train-house-prices-advanced-regression-techniques.csv"
 
 # ---------------- UI ----------------
 st.title("🔮 Live Prediction")

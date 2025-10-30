@@ -1,6 +1,8 @@
 import os, sys
 import streamlit as st 
 import pandas as pd
+import subprocess, sys, importlib
+
 
 SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if SRC_PATH not in sys.path:
@@ -17,6 +19,18 @@ try:
 except Exception:
     OPTUNA_AVAILABLE = False
 
+def _ensure_optuna():
+    """Cài optuna nếu chưa có và reload vào runtime."""
+    global OPTUNA_AVAILABLE
+    if OPTUNA_AVAILABLE:
+        return
+    with st.spinner("Installing Optuna..."):
+        # dùng pip trong đúng interpreter hiện tại
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "optuna"])
+    importlib.invalidate_caches()
+    importlib.import_module("optuna")
+    OPTUNA_AVAILABLE = True
+
 st.write()
 
 # Sidebar cấu hình
@@ -28,8 +42,7 @@ use_optuna = st.sidebar.checkbox(
 )
 
 if use_optuna and not OPTUNA_AVAILABLE:
-    st.sidebar.warning("⚠️ Optuna chưa được cài. Chạy: pip install optuna")
-    use_optuna = False
+    _ensure_optuna()
 
 n_trials = st.sidebar.slider("Number of Optuna Trials", 10, 200, 50)
 cv_folds = st.sidebar.slider("Number of CV Folds", 3, 10, 5)

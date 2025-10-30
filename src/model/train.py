@@ -18,14 +18,23 @@ try:
 except Exception:
     _OPTUNA_AVAILABLE = False
 
+def _ensure_optuna_backend():
+    global _OPTUNA_AVAILABLE
+    if _OPTUNA_AVAILABLE:
+        return
+    import subprocess, sys, importlib
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "optuna"])
+    importlib.invalidate_caches()
+    importlib.import_module("optuna")
+    _OPTUNA_AVAILABLE = True
 
 def _tune_with_optuna(name, estimator_cls, X, y, n_trials=50, cv_splits=5, random_state=42):
     """
     Tối ưu hyperparameters cho Ridge/Lasso bằng Optuna.
     LinearRegression không có tham số để tune -> trả {}.
     """
-    if not _OPTUNA_AVAILABLE:
-        return {}
+    if tune and not _OPTUNA_AVAILABLE:
+        _ensure_optuna_backend()
 
     def build_model(trial):
         if estimator_cls is Ridge:

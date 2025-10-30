@@ -10,14 +10,38 @@ from src.model.train import train_and_evaluation
 from src.data_processing.utils import processing_pipeline
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 
+# Kiểm tra Optuna
+try:
+    import optuna  # noqa
+    OPTUNA_AVAILABLE = True
+except Exception:
+    OPTUNA_AVAILABLE = False
+
 st.write()
+
+# Sidebar cấu hình
+st.sidebar.header("Training Options")
+use_optuna = st.sidebar.checkbox(
+    "Use Optuna for Hyperparameter Optimization",
+    value=False,
+    help="Bật để tự động tối ưu hóa Ridge và Lasso bằng Optuna."
+)
+
+if use_optuna and not OPTUNA_AVAILABLE:
+    st.sidebar.warning("⚠️ Optuna chưa được cài. Chạy: pip install optuna")
+    use_optuna = False
+
+n_trials = st.sidebar.slider("Number of Optuna Trials", 10, 200, 50)
+cv_folds = st.sidebar.slider("Number of CV Folds", 3, 10, 5)
 
 # Tạo danh sách model
 models = {
     'LinReg': LinearRegression,
     'Ridge': Ridge,
     'Lasso': Lasso
+    # "ElasticNet": ElasticNet,
 }
+
 
 with st.spinner("Training models and evaluating results..."):
     house_df = pd.read_csv("data/train-house-prices-advanced-regression-techniques.csv")

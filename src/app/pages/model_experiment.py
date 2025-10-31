@@ -17,7 +17,41 @@ if SRC_PATH not in sys.path:
 from src.model.train import train_and_evaluation, plot_result
 from src.data_processing.utils import processing_pipeline, create_pipe, preprocessing
 
+# Kiểm tra Optuna
+try:
+    import optuna  # noqa
+    OPTUNA_AVAILABLE = True
+except Exception:
+    OPTUNA_AVAILABLE = False
+
+def _ensure_optuna():
+    """Cài Optuna nếu chưa có và reload vào runtime."""
+    global OPTUNA_AVAILABLE
+    if OPTUNA_AVAILABLE:
+        return
+    # import ngay trong hàm để tránh NameError khi file được exec(...)
+    import sys, importlib, subprocess
+    with st.spinner("Installing Optuna..."):
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "optuna"])
+    importlib.invalidate_caches()
+    import optuna  # re-import sau khi cài
+    OPTUNA_AVAILABLE = True
+
 st.write()
+
+# Sidebar cấu hình
+st.sidebar.header("Training Options")
+use_optuna = st.sidebar.checkbox(
+    "Use Optuna for Hyperparameter Optimization",
+    value=False,
+    help="Bật để tự động tối ưu hóa Ridge và Lasso bằng Optuna."
+)
+
+if use_optuna and not OPTUNA_AVAILABLE:
+    _ensure_optuna()
+
+n_trials = st.sidebar.slider("Number of Optuna Trials", 10, 200, 50)
+cv_folds = st.sidebar.slider("Number of CV Folds", 3, 10, 5)
 
 # Tạo danh sách model
 models = {'LinearRegression':LinearRegression(),'Ridge':Ridge(),'Lasso':Lasso(),'Elastic Net':ElasticNet(),
@@ -30,6 +64,7 @@ num_imps = ['KNN Imputer','Iterative Imputer','Simple Imputer']
 num_trans = ['None','Yeo-Johnson']
 num_scals = ['Robust Scaler','MinMaxScaler','StandardScaler','No Scaler']
 select_features = ['None','Random Forest', 'XGBoost','Mutual Info']
+
 
 with st.spinner("Training models and evaluating results..."):
     house_df = pd.read_csv("data/train-house-prices-advanced-regression-techniques.csv")

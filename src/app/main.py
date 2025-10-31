@@ -1,6 +1,8 @@
 import os, sys
 import streamlit as st
 
+os.environ.setdefault("PYTHONUTF8", "1")
+
 SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if SRC_PATH not in sys.path:
     sys.path.append(SRC_PATH)
@@ -9,6 +11,14 @@ from src.app.utils.logging_utils import logger as Logger
 from src.app.routes import Routes
 #from src.app import startup as Startup
 
+# traceback đúng tên file
+def _exec_file(path: str):
+    with open(path, 'rb') as f:
+        source_bytes = f.read()
+    # Decode UTF-8, thay ký tự lạ => tránh crash
+    source = source_bytes.decode('utf-8', errors='replace')
+    code = compile(source, path, 'exec')
+    exec(code, globals(), globals())
 
 def main():
     # Configure the page layout

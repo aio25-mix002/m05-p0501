@@ -32,13 +32,11 @@ def missing_ftr(df):
     
 def heatmap(df):
     ''' Correlation heatmap of numerical feature'''
-    plt.figure(figsize=(30, 9))
-    sns.heatmap(
-        df.corr(numeric_only=True),
-        cmap="coolwarm",
-        linewidths=0.5,
-        center=0,
-        cbar_kws={"shrink": 0.8}
-    )
+    plt.figure(figsize=(30, 15))
+    sns.heatmap(df.corr(numeric_only=True),cmap='viridis',linewidths = 0.5, center = 0,fmt=".2f", cbar_kws={'shrink':0.8},annot=True)
     plt.title("Correlation Heatmap of Numerical Features", fontsize=16, pad=15)
+    plt.show()
+
+def histogram(df):
+    df.select_dtypes(include = ['float64', 'int64']).hist(figsize=(16, 20), bins=50, xlabelsize=8, ylabelsize=8, color='cornflowerblue')
     plt.show()

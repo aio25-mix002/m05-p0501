@@ -58,7 +58,7 @@ def _read_train_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 @st.cache_resource(show_spinner=False)
-def _fit_pipeline(train_df: pd.DataFrame, feature_cols, model_name="Ridge", alpha=1.0):
+def _fit_pipeline(train_df: pd.DataFrame, feature_cols, model_name="Ridge", alpha=1.0, max_iter=1000,l1_ratio=0.5,epsilon=1e-6):
     """
     Fit pipeline (impute + scale + model) trên train_df nhưng chỉ dùng 5 feature đã chọn.
     Trả về sklearn Pipeline đã fit.
@@ -67,7 +67,7 @@ def _fit_pipeline(train_df: pd.DataFrame, feature_cols, model_name="Ridge", alph
     from sklearn.pipeline import Pipeline
     from sklearn.preprocessing import StandardScaler
     from sklearn.impute import SimpleImputer
-    from sklearn.linear_model import LinearRegression, Ridge, Lasso
+    from sklearn.linear_model import LinearRegression, Ridge, Lasso, HuberRegressor, ElasticNet
 
     X = train_df[feature_cols].copy()
     y = train_df["SalePrice"].astype(float)
@@ -87,7 +87,11 @@ def _fit_pipeline(train_df: pd.DataFrame, feature_cols, model_name="Ridge", alph
     elif model_name == "Ridge":
         model = Ridge(alpha=float(alpha))
     elif model_name == "Lasso":
-        model = Lasso(alpha=float(alpha), max_iter=10000)
+        model = Lasso(alpha=float(alpha), max_iter=max_iter)
+    elif model_name == "ElasticNet":
+        model = ElasticNet(alpha=float(alpha), max_iter=max_iter, l1_ratio=l1_ratio)
+    elif model_name == "HuberRegressor":
+        model = HuberRegressor(alpha=float(alpha), max_iter=max_iter,epsilon=epsilon)
     else:
         raise ValueError("Unknown model")
 
@@ -121,13 +125,32 @@ def clamp(a, lo, hi):
 
 # ------------- Sidebar: chọn model & alpha -------------
 st.sidebar.header("Model Options")
-model_name = st.sidebar.selectbox("Model", ["Ridge", "Lasso", "LinearRegression"], index=0)
-alpha = None
-if model_name in ("Ridge", "Lasso"):
-    alpha = st.sidebar.number_input(
-        "alpha (regularization)",
-        min_value=1e-6, max_value=1e3, value=1.0, step=0.1, format="%.6f"
-    )
+with st.sidebar:
+    model_name = st.selectbox("Model", ["Ridge", "Lasso", "LinearRegression",'ElasticNet','HuberRegressor'], index=0)
+    alpha = None
+    max_iter = None
+    l1_ratio = None
+    epsilon = None
+    if model_name in ("Ridge", "Lasso",'ElasticNet','HuberRegressor'):
+        alpha = st.number_input(
+            "alpha (regularization)",
+            min_value=1e-6, max_value=1e3, value=1.0, step=0.1, format="%.6f"
+        )
+        max_iter = st.number_input(
+            "max iteration",
+            min_value=500, max_value=2000, value=500, step=100
+        )
+    if model_name == 'HuberRegressor':
+        epsilon = st.number_input(
+            "epsilon",
+            min_value=1.2, max_value=2.0, value=1.5, step=0.1, format="%.1f"
+        )
+    if model_name == 'ElasticNet':
+        l1_ratio = st.number_input(
+            "l1_ratio",
+            min_value=0.2, max_value=0.8, value=0.5, step=0.1, format="%.1f"
+        )
+
 
 # ------------- Form nhập 5 tham số -------------
 with st.form("prediction_form"):
@@ -165,7 +188,10 @@ with st.spinner("Đang huấn luyện mô hình..."):
         train_df,
         feature_cols=FEATURES,
         model_name=model_name,
-        alpha=alpha if alpha is not None else 1.0
+        alpha=alpha if alpha is not None else 1.0,
+        max_iter=max_iter if max_iter is not None else 1000,
+        l1_ratio=l1_ratio if l1_ratio is not None else 0.5,
+        epsilon = epsilon if epsilon is not None else 1e-6
     )
 
 # ------------- Khi người dùng bấm Dự đoán -------------

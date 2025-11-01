@@ -7,6 +7,8 @@ import lightgbm as lgb
 import xgboost as xgb
 import matplotlib.pyplot as plt
 import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore")
 
 SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if SRC_PATH not in sys.path:
@@ -25,15 +27,16 @@ except Exception:
 def _ensure_optuna():
     """Cài Optuna nếu chưa có và reload vào runtime."""
     global OPTUNA_AVAILABLE
-    if OPTUNA_AVAILABLE:
-        return
-    # import ngay trong hàm để tránh NameError khi file được exec(...)
-    import sys, importlib, subprocess
-    with st.spinner("Installing Optuna..."):
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "optuna"])
-    importlib.invalidate_caches()
-    import optuna  # re-import sau khi cài
-    OPTUNA_AVAILABLE = True
+    if not OPTUNA_AVAILABLE:
+        # import ngay trong hàm để tránh NameError khi file được exec(...)
+        import sys, importlib, subprocess
+        with st.spinner("Installing Optuna..."):
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "optuna"])
+        importlib.invalidate_caches()
+        import optuna  # re-import sau khi cài
+        OPTUNA_AVAILABLE = True
+    optuna.logging.set_verbosity(optuna.logging.ERROR)
+    
 
 try:
     import shap
@@ -124,7 +127,7 @@ if submit_btn:
         plt.close()
 
     X_scaled_test = pd.DataFrame(pipeline.transform(X_test), columns = selected_features)
-    df_results, best_model = train_and_evaluation(models, X_scaled_train, y_train, X_scaled_test, y_test)
+    df_results, best_model = train_and_evaluation(models, X_scaled_train, y_train, X_scaled_test, y_test,use_optuna,n_trials,cv_folds)
 
     #st.success("Model training and evaluation complete!")
     # Display the results

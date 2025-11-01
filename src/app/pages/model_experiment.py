@@ -5,10 +5,8 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, Hub
 from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor, AdaBoostRegressor, GradientBoostingRegressor
 import lightgbm as lgb
 import xgboost as xgb
-from catboost import CatBoostRegressor
 import matplotlib.pyplot as plt
 import seaborn as sns
-import shap
 
 SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if SRC_PATH not in sys.path:
@@ -36,6 +34,24 @@ def _ensure_optuna():
     importlib.invalidate_caches()
     import optuna  # re-import sau khi cài
     OPTUNA_AVAILABLE = True
+
+try:
+    import shap
+except Exception:
+    import sys, importlib, subprocess
+    with st.spinner("Installing Shap..."):
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "shap"])
+    importlib.invalidate_caches()
+    import shap
+
+try:
+    from catboost import CatBoostRegressor
+except Exception:
+    import sys, importlib, subprocess
+    with st.spinner("Installing CatBoost..."):
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+    importlib.invalidate_caches()
+    from catboost import CatBoostRegressor
 
 st.write()
 
@@ -68,10 +84,9 @@ select_features = ['None','Random Forest', 'XGBoost','Mutual Info']
 
 with st.spinner("Training models and evaluating results..."):
     house_df = pd.read_csv("data/train-house-prices-advanced-regression-techniques.csv")
-    X_train, y_train, X_test, y_test, num_cols, cat_cols = preprocessing(house_df)
 
 with st.sidebar:
-    #add_features = st.checkbox('Add new feature')
+    add_features = st.checkbox('Add new feature')
     num_imputer_name = st.selectbox("Numeric Imputer", num_imps)
     num_transformer_name = st.selectbox("Numeric Transformer", num_trans)
     num_scaler_name = st.selectbox("Numeric Scaler Scaler", num_scals)
@@ -83,6 +98,7 @@ with st.sidebar:
     submit_btn = st.button("🚀 Train Model")
 
 if submit_btn:
+    X_train, y_train, X_test, y_test, num_cols, cat_cols = preprocessing(house_df, add_features)
     pipeline = create_pipe(num_cols,num_imputer_name, num_transformer_name,num_scaler_name,cat_cols,select_features_name,k)
     X_scaled_train = pipeline.fit_transform(X_train,y_train)
     #st.session_state['pipeline'] = pipeline

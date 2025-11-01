@@ -203,12 +203,15 @@ def stack_features(df, num_cols, encoded_cols):
     ''' Stack numerical and encoded columns '''
     return np.hstack([df[num_cols], df[encoded_cols]])
 
-def preprocessing(df):
+def preprocessing(df, add_features=False):
     df = drop_missing(df)
-    corr_matrix = df.corr(numeric_only=True).abs()
-    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-    to_drop = [column for column in upper.columns if any(upper[column] > 0.8)]
-    df = df.drop(columns=to_drop)
+    if add_features:
+        df = create_new_feature(df)
+    else:
+        corr_matrix = df.corr(numeric_only=True).abs()
+        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+        to_drop = [column for column in upper.columns if any(upper[column] > 0.8)]
+        df = df.drop(columns=to_drop)
     num_cols = [col for col in df.columns if df[col].dtype in ["float64","int64"]]
     cat_cols = [col for col in df.columns if df[col].dtype not in ["float64","int64"]]
     num_cols.remove('SalePrice')
@@ -255,3 +258,62 @@ def create_pipe(num_cols, num_imp, num_tran, num_scal, cat_cols, feature_name,k)
         pipe.steps.append(("select", SelectKBest(score_func=mutual_info_regression, k=k)))
 
     return pipe
+
+def create_new_feature(df):
+    corr_matrix = df.corr(numeric_only=True).abs()
+    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+    to_drop = [column for column in upper.columns if any(upper[column] > 0.8)]
+
+    # Total bathrooms (full + 0.5*half) including basement
+    if set(["FullBath", "HalfBath", "BsmtFullBath", "BsmtHalfBath"]).issubset(df.columns):
+        df["TotalBaths"] = (
+            df["FullBath"].fillna(0)
+            + 0.5 * df["HalfBath"].fillna(0)
+            + df["BsmtFullBath"].fillna(0)
+            + 0.5 * df["BsmtHalfBath"].fillna(0)
+        )
+
+    # Total square footage (basement + floors)
+    if set(["TotalBsmtSF", "1stFlrSF", "2ndFlrSF"]).issubset(df.columns):
+        df["TotalSF"] = df["TotalBsmtSF"].fillna(0) + df["1stFlrSF"].fillna(0) + df["2ndFlrSF"].fillna(0)
+
+    # Porches
+    for col in ["OpenPorchSF", "EnclosedPorch", "3SsnPorch", "ScreenPorch"]:
+        if col in df.columns:
+            df[col] = df[col].fillna(0)
+    if set(["OpenPorchSF", "EnclosedPorch", "3SsnPorch", "ScreenPorch"]).issubset(df.columns):
+        df["TotalPorchSF"] = df["OpenPorchSF"] + df["EnclosedPorch"] + df["3SsnPorch"] + df["ScreenPorch"]
+
+    # Binary presence flags
+    if "PoolArea" in df.columns:
+        df["HasPool"] = (df["PoolArea"].fillna(0) > 0).astype("int32")
+    if "GarageArea" in df.columns:
+        df["HasGarage"] = (df["GarageArea"].fillna(0) > 0).astype("int32")
+    if "Fireplaces" in df.columns:
+        df["HasFireplace"] = (df["Fireplaces"].fillna(0) > 0).astype("int32")
+    if "TotalPorchSF" in df.columns:
+        df["HasPorch"] = (df["TotalPorchSF"].fillna(0) > 0).astype("int32")
+
+    # Age-related features
+    for col in ["YearBuilt", "YearRemodAdd", "YrSold"]:
+        if col in df.columns:
+            df[col] = df[col].fillna(df[col].median())
+    if set(["YrSold", "YearBuilt"]).issubset(df.columns):
+        df["HouseAge"] = (df["YrSold"] - df["YearBuilt"]).clip(lower=0)
+    if set(["YrSold", "YearRemodAdd"]).issubset(df.columns):
+        df["RemodelAge"] = (df["YrSold"] - df["YearRemodAdd"]).clip(lower=0)
+    if set(["YearBuilt", "YearRemodAdd"]).issubset(df.columns):
+        df["IsRemodeled"] = (df["YearRemodAdd"] != df["YearBuilt"]).astype("int32")
+    
+
+    # Simple interaction: quality-weighted living area
+    if set(["OverallQual", "GrLivArea"]).issubset(df.columns):
+        df["QualXGrLivArea"] = df["OverallQual"].fillna(0) * df["GrLivArea"].fillna(0)
+    
+    to_drop.extend(["FullBath", "HalfBath", "BsmtFullBath", "BsmtHalfBath","TotalBsmtSF", "1stFlrSF", "2ndFlrSF","OpenPorchSF",
+                           "EnclosedPorch", "3SsnPorch", "ScreenPorch","OverallQual", "GrLivArea","YearBuilt", "YearRemodAdd", 
+                           "YrSold","PoolArea","GarageArea","Fireplaces","TotalPorchSF"])
+
+    df = df.drop(columns=to_drop)
+
+    return df.copy()
